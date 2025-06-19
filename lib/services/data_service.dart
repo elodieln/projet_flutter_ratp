@@ -14,7 +14,7 @@ class DataService {
   Future<void> loadData() async {
     if (_allSegments.isNotEmpty) return;
 
-    final String response = await rootBundle.loadString('assets/positionnement-dans-la-rame.json');
+    final String response = await rootBundle.loadString('asset/positionnement-dans-la-rame.json');
     final List<dynamic> data = await json.decode(response);
 
     // On filtre pour ne garder que les connexions entre stations (stop_point)
