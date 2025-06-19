@@ -15,11 +15,10 @@ class TripCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Colors.white,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
         child: Column(
           children: List.generate(journey.length, (index) {
             final segment = journey[index];
-            // Affiche une ligne de connexion sauf pour le dernier élément
             final bool isLastSegment = index == journey.length - 1;
             return _buildLegWidget(context, segment, isLastSegment);
           }),
@@ -28,16 +27,15 @@ class TripCard extends StatelessWidget {
     );
   }
 
-  // Construit la vue pour un seul tronçon (une ligne de métro)
   Widget _buildLegWidget(BuildContext context, Positionnement segment, bool isLast) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // La ligne verticale et l'icône
           SizedBox(
-            width: 40,
+            width: 30,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Icon(Icons.circle, size: 12, color: Colors.grey[400]),
                 if (!isLast)
@@ -50,28 +48,38 @@ class TripCard extends StatelessWidget {
               ],
             ),
           ),
-          // Les informations du tronçon
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  segment.fromName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                Text(
-                  'Métro Ligne ${segment.lineName}',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 16),
-                _buildPositionIndicator(segment.positionAverage),
-                const SizedBox(height: 24),
-                if (isLast)
-                   Text(
-                     segment.toName,
-                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                   ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    segment.fromName,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  Text(
+                    'Métro Ligne ${segment.lineName}',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPositionIndicator(segment.positionAverage),
+                  const SizedBox(height: 12),
+                   if (isLast) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(Icons.circle, size: 12, color: Colors.grey[400]),
+                          const SizedBox(width: 18),
+                          Text(
+                            segment.toName,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      )
+                   ]
+                ],
+              ),
             ),
           ),
         ],
@@ -79,43 +87,21 @@ class TripCard extends StatelessWidget {
     );
   }
 
-  // Le petit indicateur de position dans la rame
   Widget _buildPositionIndicator(String position) {
-    IconData iconData;
-    String label;
-
-    switch (position) {
-      case 'Avant':
-        iconData = Icons.arrow_upward;
-        label = 'Avant';
-        break;
-      case 'Milieu':
-        iconData = Icons.swap_horiz;
-        label = 'Milieu';
-        break;
-      case 'Arrière':
-        iconData = Icons.arrow_downward;
-        label = 'Arrière';
-        break;
-      default:
-        iconData = Icons.help_outline;
-        label = 'N/A';
-    }
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.train, size: 16, color: Colors.grey[700]),
-          const SizedBox(width: 8),
+          Icon(Icons.train_outlined, size: 16, color: Colors.grey[700]),
+          const SizedBox(width: 6),
           Text(
-            label,
-            style: TextStyle(fontWeight: FontWeight.w500, color: Colors.grey[800]),
+            position,
+            style: TextStyle(fontWeight: FontWeight.w500, color: Colors.grey[800], fontSize: 12),
           ),
         ],
       ),
