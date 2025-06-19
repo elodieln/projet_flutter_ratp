@@ -1,117 +1,154 @@
 // lib/screens/search_screen.dart
-
-import 'package:flutter/material.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:projet_ratp/services/pathfinding_service.dart';
 import 'package:projet_ratp/screens/results_screen.dart';
+import 'package:flutter/material.dart';
+import '../services/data_service.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  _SearchScreenState createState() => _SearchScreenState();
+  State<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _startStationController = TextEditingController();
-  final TextEditingController _endStationController = TextEditingController();
-  final PathfindingService _pathfindingService = PathfindingService();
-  
-  bool _isButtonEnabled = false;
+  final DataService _dataService = DataService();
+  String? _startStation;
+  String? _endStation;
 
-  @override
-  void initState() {
-    super.initState();
-    _startStationController.addListener(_validateFields);
-    _endStationController.addListener(_validateFields);
-  }
-
-  void _validateFields() {
-    setState(() {
-      _isButtonEnabled = _startStationController.text.isNotEmpty && _endStationController.text.isNotEmpty;
-    });
-  }
-
-  @override
-  void dispose() {
-    _startStationController.dispose();
-    _endStationController.dispose();
-    super.dispose();
-  }
+  bool get isSearchButtonEnabled =>
+      _startStation != null && _endStation != null && _startStation != _endStation;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Trouver un itinéraire'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // NOUVEAU: Utilisation de TypeAheadField pour l'auto-complétion
-            TypeAheadField<String>(
-              suggestionsCallback: (pattern) async {
-                return await _pathfindingService.getStationSuggestions(pattern);
-              },
-              itemBuilder: (context, suggestion) {
-                return ListTile(
-                  title: Text(suggestion),
-                );
-              },
-              onSuggestionSelected: (suggestion) {
-                _startStationController.text = suggestion;
-              },
-              textFieldConfiguration: TextFieldConfiguration(
-                controller: _startStationController,
-                decoration: const InputDecoration(
-                  labelText: 'Départ',
-                  border: OutlineInputBorder(),
-                ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              const Text(
+                'Nouveau trajet',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 16),
-            TypeAheadField<String>(
-              suggestionsCallback: (pattern) async {
-                return await _pathfindingService.getStationSuggestions(pattern);
-              },
-              itemBuilder: (context, suggestion) {
-                return ListTile(
-                  title: Text(suggestion),
-                );
-              },
-              onSuggestionSelected: (suggestion) {
-                _endStationController.text = suggestion;
-              },
-              textFieldConfiguration: TextFieldConfiguration(
-                controller: _endStationController,
-                decoration: const InputDecoration(
-                  labelText: 'Arrivée',
-                  border: OutlineInputBorder(),
-                ),
+              const SizedBox(height: 40),
+              _buildAutocompleteField(
+                label: 'STATION DE DÉPART',
+                hint: 'Ex : Gare Saint-Lazare',
+                onSelected: (station) {
+                  setState(() {
+                    _startStation = station;
+                  });
+                },
               ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              // CHANGEMENT: Activation/Désactivation dynamique du bouton
-              onPressed: _isButtonEnabled
-                  ? () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ResultsScreen(
-                            startStation: _startStationController.text,
-                            endStation: _endStationController.text,
+              const SizedBox(height: 20),
+              _buildAutocompleteField(
+                label: 'STATION D\'ARRIVÉE',
+                hint: 'Ex : République',
+                onSelected: (station) {
+                  setState(() {
+                    _endStation = station;
+                  });
+                },
+              ),
+              const Spacer(),
+              ElevatedButton(
+                onPressed: isSearchButtonEnabled
+                    ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ResultsScreen(
+                              startStation: _startStation!,
+                              endStation: _endStation!,
+                            ),
                           ),
-                        ),
-                      );
-                    }
-                  : null,
-              child: const Text('Rechercher'),
-            ),
-          ],
+                        );
+                      }
+                    : null,
+                child: const Text('Rechercher'),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAutocompleteField({
+    required String label,
+    required String hint,
+    required Function(String) onSelected,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Autocomplete<String>(
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            if (textEditingValue.text.isEmpty) {
+              return const Iterable<String>.empty();
+            }
+            return _dataService.stationNames.where((String option) {
+              return option
+                  .toLowerCase()
+                  .contains(textEditingValue.text.toLowerCase());
+            });
+          },
+          onSelected: onSelected,
+          fieldViewBuilder:
+              (context, textEditingController, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: textEditingController,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                hintText: hint,
+                prefixIcon: const Icon(Icons.trip_origin),
+              ),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4.0,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxHeight: 250,
+                      maxWidth: MediaQuery.of(context).size.width - 40),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final String option = options.elementAt(index);
+                      return InkWell(
+                        onTap: () {
+                          onSelected(option);
+                        },
+                        child: ListTile(
+                          title: Text(option),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

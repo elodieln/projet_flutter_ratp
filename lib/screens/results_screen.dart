@@ -1,5 +1,4 @@
 // lib/screens/results_screen.dart
-import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/positionnement.dart';
@@ -21,13 +20,11 @@ class ResultsScreen extends StatefulWidget {
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
-  // Le Future qui contiendra le résultat de notre recherche asynchrone
   late Future<List<List<Positionnement>>> _journeysFuture;
 
   @override
   void initState() {
     super.initState();
-    // On lance la recherche en arrière-plan avec compute dès l'initialisation de l'écran
     _journeysFuture = compute(
       findJourneysInIsolate,
       PathfindingParams(
@@ -57,25 +54,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
       body: FutureBuilder<List<List<Positionnement>>>(
         future: _journeysFuture,
         builder: (context, snapshot) {
-          // 1. État de chargement
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // 2. État en cas d'erreur
-          if (snapshot.hasError) {
-            log("Erreur dans le FutureBuilder: ${snapshot.error}");
-            return const Center(
-              child: Text(
-                'Une erreur est survenue lors de la recherche.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.red),
-              ),
-            );
-          }
-          
-          // 3. État si aucun résultat n'est trouvé
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
               child: Text(
                 'Aucun trajet trouvé pour cette sélection.',
@@ -85,12 +68,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
             );
           }
 
-          // 4. Affichage des résultats
           final journeys = snapshot.data!;
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: journeys.length, // Limité à 5 au maximum par l'algorithme 
+            itemCount: journeys.length,
             itemBuilder: (context, index) {
               final journey = journeys[index];
               return Padding(
